@@ -8,42 +8,83 @@ var app = http.createServer(function(request,response){
     var title = queryData.id;
     var listmode = 'ul';
     var filelink = 'data/' + title;
-    console.log(filelink);
-    fs.readFile(filelink, 'utf8', function(err, maintext){
-        var template = `
-<!doctype html>
-<html>
-<head>
-  <title>WEB1 - ${title}</title>
-  <meta charset="utf-8">
-</head>
-<body>
-  <h1><a href="/">WEB</a></h1>
-  <${listmode}>
-    <li><a href="/?id=HTML">HTML</a></li>
-    <li><a href="/?id=CSS">CSS</a></li>
-    <li><a href="/?id=JavaScript">JavaScript</a></li>
-  </${listmode}>
-  <h2>${title}</h2>
-  <p>
-  ${maintext}
-  </p>
-</body>
-</html>
 
-    `;
-    response.end(template);
-    });
+    console.log(url.parse(_url, true)); // url 정보를 분석할 때 출력
+    var pathname = url.parse(_url, true).pathname;
 
+    if(pathname === '/'){
+        if(queryData.id === undefined) {
+            fs.readdir('./data',function(error, filelist) {
+                console.log(filelist);
+                var title = 'Welcome';
+                var maintext = 'Hello, Node.js';
+                var data_list = `<${listmode}>`
+                var i = 0;
+                while(i < filelist.length) {
+                    data_list += `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`
+                    i = i + 1;
+                }
+                
+                data_list += `</${listmode}>`
+                var template = `
+                    <!doctype html>
+                    <html>
+                    <head>
+                      <title>WEB1 - ${title}</title>
+                      <meta charset="utf-8">
+                    </head>
+                    <body>
+                      <h1><a href="/">WEB</a></h1>
+                      ${data_list}
+                      <h2>${title}</h2>
+                      <p>
+                      ${maintext}
+                      </p>
+                    </body>
+                    </html>
+                    `;
+                response.writeHead(200); // 잘 됐는지 
+                response.end(template);
+            })
 
-    console.log(queryData.id)
-    if(_url == '/'){
-      title = 'Welcome';
+            
+        } else {
+            fs.readFile(filelink, 'utf8', function(err, maintext){
+                fs.readdir('./data',function(error, filelist) {
+                    var data_list = `<${listmode}>`
+                    var i = 0;
+                    while(i < filelist.length) {
+                        data_list += `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`
+                        i = i + 1;
+                    }
+                    
+                    data_list += `</${listmode}>`
+                    var template = `
+                        <!doctype html>
+                        <html>
+                        <head>
+                          <title>WEB1 - ${title}</title>
+                          <meta charset="utf-8">
+                        </head>
+                        <body>
+                          <h1><a href="/">WEB</a></h1>
+                          ${data_list}
+                          <h2>${title}</h2>
+                          <p>
+                          ${maintext}
+                          </p>
+                        </body>
+                        </html>
+                        `;
+                    response.writeHead(200); // 잘 됐는지 
+                    response.end(template);
+                });
+            });
+        }
+    } else {
+        response.writeHead(404);
+        response.end('Not found');
     }
-    if(_url == '/favicon.ico'){
-      return response.writeHead(404);
-    }
-    response.writeHead(200);
 
     
  
