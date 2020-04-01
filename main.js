@@ -2,24 +2,8 @@ var http = require('http');
 var fs = require('fs');
 var url = require('url')
 var qs = require('querystring'); //qs -> querystring 이라는 모듈을 가져온다.
-
-function templateHTML(title, data_list, body, control) {
-    return `
-        <!doctype html>
-        <html>
-        <head>
-          <title>WEB1 - ${title}</title>
-          <meta charset="utf-8">
-        </head>
-        <body>
-          <h1><a href="/">WEB</a></h1>
-          ${data_list}
-          ${control}
-          ${body}
-        </body>
-        </html>
-        `;
-}
+var template = require('./lib/template.js');
+var path = require('path');
 
 function templateList(listmode, filelist) {
     var data_list = `<${listmode}>`;
@@ -35,7 +19,17 @@ function templateList(listmode, filelist) {
 var app = http.createServer(function(request,response){
     var _url = request.url; // 이건 query string 값을 받아온다는 것 같음.
     var queryData = url.parse(_url, true).query;
-    var title = queryData.id;
+    console.log('output : ', queryData.id);
+    var title = '';
+    var filteredId = '';
+    if(queryData.id === undefined) {
+        title = queryData.id;
+    }
+    else {
+        title = path.parse(queryData.id).base;
+    }
+    
+    
     var listmode = 'ul';
     var filelink = 'data/' + title;
 
@@ -49,19 +43,27 @@ var app = http.createServer(function(request,response){
                 console.log(filelist);
                 var title = 'Welcome';
                 var maintext = 'Hello, Node.js';
-                var data_list = templateList(listmode, filelist);
-                var template = templateHTML(title, data_list, 
+                // var data_list = templateList(listmode, filelist);
+                // var template = templateHTML(title, data_list, 
+                //     `<h2>${title}</h2>${maintext}`,
+                //     `<a href="/create">create</a>`
+                //     );
+                // response.writeHead(200); // 잘 됐는지 
+                // response.end(template);
+
+                var list = template.list(listmode, filelist);
+                var html = template.html(title, list, 
                     `<h2>${title}</h2>${maintext}`,
                     `<a href="/create">create</a>`
                     );
                 response.writeHead(200); // 잘 됐는지 
-                response.end(template);
+                response.end(html);
             })
         } else {
             fs.readFile(filelink, 'utf8', function(err, maintext){
                 fs.readdir('./data',function(error, filelist) {
-                    var data_list = templateList(listmode, filelist);
-                    var template = templateHTML(title, data_list, 
+                    var list = template.list(listmode, filelist);
+                    var html = template.html(title, list, 
                     `<h2>${title}</h2>${maintext}`,
                     `   <a href="/create">create</a> 
                         <a href="/update?id=${title}">update</a>
@@ -74,7 +76,7 @@ var app = http.createServer(function(request,response){
                     );
 
                     response.writeHead(200); // 잘 됐는지 
-                    response.end(template);
+                    response.end(html);
                 });
             });
         }
@@ -84,8 +86,8 @@ var app = http.createServer(function(request,response){
                 console.log(filelist);
                 var title = 'Welcome';
                 var maintext = 'Hello, Node.js';
-                var data_list = templateList(listmode, filelist);
-                var template = templateHTML(title, data_list, `
+                var list = template.list(listmode, filelist);
+                var html = template.html(title, list, `
                     <form action="/create_process" method="post">
                         <p><input type="text" name="title" placeholder="title"></p>
                         <p>
@@ -97,7 +99,7 @@ var app = http.createServer(function(request,response){
                     </form>
                 `, '');
                 response.writeHead(200); // 잘 됐는지 
-                response.end(template);
+                response.end(html);
             })
 
     } else if(pathname === '/create_process') { 
@@ -122,8 +124,8 @@ var app = http.createServer(function(request,response){
                 console.log(queryData.id);
                 console.log("log :: ");
                 console.log(filelist);
-                var data_list = templateList(listmode, filelist);
-                var template = templateHTML(title, data_list, 
+                var list = template.list(listmode, filelist);
+                var html = template.html(title, list, 
                     //hidden 보이진 않지만 그 id와 value를 통해 값이 가긴 한다.
                 `
                     <form action="/update_process" method="post">
@@ -141,7 +143,7 @@ var app = http.createServer(function(request,response){
                 );
 
                 response.writeHead(200); // 잘 됐는지 
-                response.end(template);
+                response.end(html);
             });
         });
     } else if(pathname === `/update_process`) {
@@ -172,7 +174,9 @@ var app = http.createServer(function(request,response){
         request.on('end',function() { // 'end'는 그 조각조각 전송이 끝났다는 것
             var post = qs.parse(body);
             var id = post.id;
-            fs.unlink(`data/${id}`, function(error) {
+            //이 부분은 보안상 문제가 있음 
+            var filteredId = path.parse(id).base; // 보안문제수정
+            fs.unlink(`data/${filteredId}`, function(error) {
                 response.writeHead(302, {Location: `/`}); // 잘 됐는지 
                 response.end();
             })
