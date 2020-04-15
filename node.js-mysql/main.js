@@ -7,6 +7,7 @@ var path = require('path');
 var db = require('./lib/db');
 var topic = require('./lib/topic'); //.js는 생략 가능 
 var author = require('./lib/author');
+
 var app = http.createServer(function(request,response){
     var _url = request.url;
     var queryData = url.parse(_url, true).query;
@@ -29,6 +30,14 @@ var app = http.createServer(function(request,response){
       topic.delete_process(request, response, queryData, pathname);
     } else if(pathname === '/author') {
       author.home(request, response);
+    } else if(pathname === '/author/create_process') {
+      author.create_process(request, response);
+    } else if(pathname === '/author/update') {
+      author.update(request, response);
+    } else if(pathname === '/author/update_process') {
+      author.update_process(request, response);
+    } else if(pathname === '/author/delete_process') {
+      author.delete_process(request, response);
     } else {
       response.writeHead(404);
       response.end('Not found');
